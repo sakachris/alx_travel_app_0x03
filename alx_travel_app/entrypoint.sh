@@ -42,38 +42,8 @@ if not User.objects.filter(email=email).exists():
 EOF
 fi
 
-# echo "📦 Collecting static files..."
-# python manage.py collectstatic --noinput
-
-# echo "🛠️ Applying database migrations..."
-# python manage.py migrate --noinput
-
-# # Create a default superuser
-# if [[ "$CREATE_SUPERUSER" == "true" ]]; then
-#   echo "👤 Creating superuser..."
-#   python manage.py shell <<EOF
-# from django.contrib.auth import get_user_model
-# import os
-
-# User = get_user_model()
-# username = os.getenv("DJANGO_SUPERUSER_USERNAME")
-# email = os.getenv("DJANGO_SUPERUSER_EMAIL")
-# password = os.getenv("DJANGO_SUPERUSER_PASSWORD")
-
-# if not User.objects.filter(username=username).exists():
-#     User.objects.create_superuser(username=username, email=email, password=password)
-# EOF
-# fi
-
-# if [[ "$CREATE_SUPERUSER" == "true" ]]; then
-#   echo "👤 Creating superuser..."
-#   python manage.py shell <<EOF
-# from django.contrib.auth import get_user_model
-# User = get_user_model()
-# if not User.objects.filter(username='admin').exists():
-#     User.objects.create_superuser('admin', 'admin@example.com', 'adminpass')
-# EOF
-# fi
+echo "📦 Collecting static files..."
+python manage.py collectstatic --noinput
 
 echo "🚀 Starting Django app..."
 exec "$@"
