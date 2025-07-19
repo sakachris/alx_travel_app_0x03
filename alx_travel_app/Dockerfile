@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y \
     pkg-config \
     default-libmysqlclient-dev \
     libmariadb-dev \
+    netcat \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
