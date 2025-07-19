@@ -6,13 +6,23 @@ FROM python:3.11-slim AS builder
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
+# RUN apt-get update && apt-get install -y \
+#     gcc \
+#     pkg-config \
+#     default-libmysqlclient-dev \
+#     libmariadb-dev \
+#     netcat \
+#     && rm -rf /var/lib/apt/lists/*
+
 RUN apt-get update && apt-get install -y \
     gcc \
-    pkg-config \
+    g++ \
+    python3-dev \
     default-libmysqlclient-dev \
-    libmariadb-dev \
     netcat \
-    && rm -rf /var/lib/apt/lists/*
+    libmariadb-dev-compat \
+    libmariadb-dev \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
