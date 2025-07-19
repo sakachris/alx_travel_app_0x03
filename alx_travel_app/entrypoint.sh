@@ -1,10 +1,62 @@
 #!/bin/bash
 
-echo "Collecting static files..."
+set -e
+
+echo "⏳ Waiting for database to be ready..."
+
+# Wait until MySQL is ready
+until nc -z -v -w30 $DB_HOST $DB_PORT
+do
+  echo "Waiting for MySQL at $DB_HOST:$DB_PORT..."
+  sleep 5
+done
+
+echo "✅ MySQL is up - continuing..."
+
+echo "📦 Collecting static files..."
 python manage.py collectstatic --noinput
 
-echo "Applying database migrations..."
-python manage.py migrate
+echo "🛠️ Applying database migrations..."
+python manage.py migrate --noinput
 
-echo "Starting Django app..."
+# Create a default superuser
+if [[ "$CREATE_SUPERUSER" == "true" ]]; then
+  echo "👤 Creating superuser..."
+  python manage.py shell <<EOF
+from django.contrib.auth import get_user_model
+import os
+
+User = get_user_model()
+username = os.getenv("DJANGO_SUPERUSER_USERNAME")
+email = os.getenv("DJANGO_SUPERUSER_EMAIL")
+password = os.getenv("DJANGO_SUPERUSER_PASSWORD")
+
+if not User.objects.filter(username=username).exists():
+    User.objects.create_superuser(username=username, email=email, password=password)
+EOF
+fi
+
+# if [[ "$CREATE_SUPERUSER" == "true" ]]; then
+#   echo "👤 Creating superuser..."
+#   python manage.py shell <<EOF
+# from django.contrib.auth import get_user_model
+# User = get_user_model()
+# if not User.objects.filter(username='admin').exists():
+#     User.objects.create_superuser('admin', 'admin@example.com', 'adminpass')
+# EOF
+# fi
+
+echo "🚀 Starting Django app..."
 exec "$@"
+
+
+# #!/bin/bash
+
+# echo "Collecting static files..."
+# python manage.py collectstatic --noinput
+
+# echo "Applying database migrations..."
+# python manage.py migrate
+
+# echo "Starting Django app..."
+# exec "$@"
