@@ -13,8 +13,8 @@ done
 
 echo "✅ MySQL is up - continuing..."
 
-echo "📦 Collecting static files..."
-python manage.py collectstatic --noinput
+echo "🧱 Making migrations..."
+python manage.py makemigrations --noinput
 
 echo "🛠️ Applying database migrations..."
 python manage.py migrate --noinput
@@ -27,14 +27,43 @@ from django.contrib.auth import get_user_model
 import os
 
 User = get_user_model()
-username = os.getenv("DJANGO_SUPERUSER_USERNAME")
 email = os.getenv("DJANGO_SUPERUSER_EMAIL")
 password = os.getenv("DJANGO_SUPERUSER_PASSWORD")
+first_name = os.getenv("DJANGO_SUPERUSER_FIRST_NAME", "Admin")
+last_name = os.getenv("DJANGO_SUPERUSER_LAST_NAME", "User")
 
-if not User.objects.filter(username=username).exists():
-    User.objects.create_superuser(username=username, email=email, password=password)
+if not User.objects.filter(email=email).exists():
+    User.objects.create_superuser(
+        email=email,
+        first_name=first_name,
+        last_name=last_name,
+        password=password
+    )
 EOF
 fi
+
+# echo "📦 Collecting static files..."
+# python manage.py collectstatic --noinput
+
+# echo "🛠️ Applying database migrations..."
+# python manage.py migrate --noinput
+
+# # Create a default superuser
+# if [[ "$CREATE_SUPERUSER" == "true" ]]; then
+#   echo "👤 Creating superuser..."
+#   python manage.py shell <<EOF
+# from django.contrib.auth import get_user_model
+# import os
+
+# User = get_user_model()
+# username = os.getenv("DJANGO_SUPERUSER_USERNAME")
+# email = os.getenv("DJANGO_SUPERUSER_EMAIL")
+# password = os.getenv("DJANGO_SUPERUSER_PASSWORD")
+
+# if not User.objects.filter(username=username).exists():
+#     User.objects.create_superuser(username=username, email=email, password=password)
+# EOF
+# fi
 
 # if [[ "$CREATE_SUPERUSER" == "true" ]]; then
 #   echo "👤 Creating superuser..."
