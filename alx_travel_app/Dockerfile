@@ -27,8 +27,13 @@ FROM python:3.11-slim
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# ✅ Install netcat-openbsd here in the final image
-RUN apt-get update && apt-get install -y netcat-openbsd && apt-get clean && rm -rf /var/lib/apt/lists/*
+# ✅ Install netcat and MySQL runtime libraries here
+RUN apt-get update && apt-get install -y \
+    netcat-openbsd \
+    default-libmysqlclient-dev \
+    libmariadb-dev-compat \
+    libmariadb-dev \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -44,6 +49,31 @@ ENTRYPOINT ["/entrypoint.sh"]
 
 EXPOSE 8000
 CMD ["gunicorn", "alx_travel_app.wsgi:application", "--bind", "0.0.0.0:8000"]
+
+
+# # Stage 2: Final Image
+# FROM python:3.11-slim
+
+# ENV PYTHONDONTWRITEBYTECODE=1
+# ENV PYTHONUNBUFFERED=1
+
+# # ✅ Install netcat-openbsd here in the final image
+# RUN apt-get update && apt-get install -y netcat-openbsd && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# WORKDIR /app
+
+# COPY --from=builder /usr/local/lib/python3.11 /usr/local/lib/python3.11
+# COPY --from=builder /usr/local/bin /usr/local/bin
+
+# COPY . .
+
+# COPY entrypoint.sh /entrypoint.sh
+# RUN chmod +x /entrypoint.sh
+
+# ENTRYPOINT ["/entrypoint.sh"]
+
+# EXPOSE 8000
+# CMD ["gunicorn", "alx_travel_app.wsgi:application", "--bind", "0.0.0.0:8000"]
 
 
 # # Stage 1: Build
