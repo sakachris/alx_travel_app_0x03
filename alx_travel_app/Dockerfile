@@ -19,9 +19,9 @@ RUN apt-get update && apt-get install -y \
     g++ \
     python3-dev \
     default-libmysqlclient-dev \
-    netcat \
     libmariadb-dev-compat \
     libmariadb-dev \
+    netcat-openbsd \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
