@@ -5,7 +5,7 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django import forms
 
 admin.site.register(Property)
-# admin.site.register(Booking)
+
 admin.site.register(Payment)
 
 @admin.register(Booking)
