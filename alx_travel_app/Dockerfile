@@ -33,7 +33,13 @@ COPY . .
 # Debugging: Print the contents of /app to verify manage.py location
 RUN ls -l /app
 
-RUN python manage.py collectstatic --noinput
+# RUN python manage.py collectstatic --noinput
+
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# Set the entrypoint
+ENTRYPOINT ["/entrypoint.sh"]
 
 EXPOSE 8000
 CMD ["gunicorn", "alx_travel_app.wsgi:application", "--bind", "0.0.0.0:8000"]
