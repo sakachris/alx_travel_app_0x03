@@ -43,6 +43,10 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     objects = UserManager()
 
+    @property
+    def id(self):
+        return self.user_id
+
     def __str__(self):
         return self.email
 
