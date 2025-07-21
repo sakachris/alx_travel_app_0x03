@@ -6,6 +6,7 @@ from django.conf import settings
 from django.db import transaction
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
 from .models import Property, Booking, Payment
 from .serializers import InitiatePaymentSerializer, PropertySerializer, BookingSerializer, RegisterSerializer
 from .chapa import initiate_payment, verify_payment
@@ -16,6 +17,7 @@ from django.core.mail import send_mail
 from rest_framework import generics
 from rest_framework.permissions import AllowAny
 from django.contrib.auth import get_user_model
+from .permissions import IsOwnerOrReadOnly, IsBookingOwner, IsHostOwnerOrReadOnly
 
 
 logger = logging.getLogger(__name__)
@@ -38,18 +40,25 @@ class PropertyViewSet(viewsets.ModelViewSet):
 
     queryset = Property.objects.all()
     serializer_class = PropertySerializer
+    permission_classes = [IsHostOwnerOrReadOnly]
+
+    def perform_create(self, serializer):
+        serializer.save(host=self.request.user)
 
 
 class BookingViewSet(viewsets.ModelViewSet):
-    queryset = Booking.objects.all()
     serializer_class = BookingSerializer
+    permission_classes = [IsAuthenticated, IsBookingOwner]
 
-    # def perform_create(self, serializer):
-    #     booking = serializer.save()
-    #     send_email_task.delay(booking.user.email)
-    
+    def get_queryset(self):
+        # Only show bookings owned by the authenticated user
+        return Booking.objects.filter(user=self.request.user)
+
     def perform_create(self, serializer):
-        booking = serializer.save()
+        # Automatically assign the booking to the current user
+        booking = serializer.save(user=self.request.user)
+
+        # Trigger async email task
         send_booking_confirmation_email.delay(
             to_email=booking.user.email,
             property_name=booking.property.name,
@@ -57,7 +66,6 @@ class BookingViewSet(viewsets.ModelViewSet):
             end_date=str(booking.end_date),
             total_price=str(booking.total_price)
         )
-
 
 class InitiatePaymentView(APIView):
     def post(self, request):

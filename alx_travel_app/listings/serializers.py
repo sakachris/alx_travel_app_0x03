@@ -29,21 +29,31 @@ class RegisterSerializer(serializers.ModelSerializer):
         return user
 
 class PropertySerializer(serializers.ModelSerializer):
-    host = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.filter(role='host')
-    )
+    # host = serializers.PrimaryKeyRelatedField(
+    #     queryset=User.objects.filter(role='host')
+    # )
+    host = serializers.ReadOnlyField(source='user.id')
     class Meta:
         model = Property
         fields = '__all__'
+        read_only_fields = ['host']
 
 class BookingSerializer(serializers.ModelSerializer):
-    user = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.filter(role='guest')
-    )
+    user = serializers.ReadOnlyField(source='user.id')
+
     class Meta:
         model = Booking
         fields = '__all__'
-        read_only_fields = ['total_price', 'status']
+        read_only_fields = ['user', 'total_price', 'status']
+
+# class BookingSerializer(serializers.ModelSerializer):
+#     user = serializers.PrimaryKeyRelatedField(
+#         queryset=User.objects.filter(role='guest')
+#     )
+#     class Meta:
+#         model = Booking
+#         fields = '__all__'
+#         read_only_fields = ['total_price', 'status']
 
 class PaymentSerializer(serializers.ModelSerializer):
     class Meta:
