@@ -28,15 +28,46 @@ class RegisterSerializer(serializers.ModelSerializer):
         )
         return user
 
+# class PropertySerializer(serializers.ModelSerializer):
+#     # host = serializers.PrimaryKeyRelatedField(
+#     #     queryset=User.objects.filter(role='host')
+#     # )
+#     host = serializers.ReadOnlyField(source='user.id')
+#     class Meta:
+#         model = Property
+#         fields = '__all__'
+#         read_only_fields = ['host']
 class PropertySerializer(serializers.ModelSerializer):
-    # host = serializers.PrimaryKeyRelatedField(
-    #     queryset=User.objects.filter(role='host')
-    # )
-    host = serializers.ReadOnlyField(source='user.id')
+    address = serializers.SerializerMethodField()
+    offers = serializers.SerializerMethodField()
+
     class Meta:
         model = Property
-        fields = '__all__'
-        read_only_fields = ['host']
+        fields = [
+            "property_id",
+            "name",
+            "address",
+            "rating",
+            "category",
+            "pricepernight",
+            "offers",
+            "image",
+            "discount",
+        ]
+
+    def get_address(self, obj):
+        return {
+            "state": obj.state,
+            "city": obj.city,
+            "country": obj.country,
+        }
+
+    def get_offers(self, obj):
+        return {
+            "bed": str(obj.bed),
+            "shower": str(obj.shower),
+            "occupants": obj.occupants,
+        }
 
 class BookingSerializer(serializers.ModelSerializer):
     user = serializers.ReadOnlyField(source='user.id')
