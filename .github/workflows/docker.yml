@@ -25,4 +25,4 @@ jobs:
           context: ./alx_travel_app
           file: ./alx_travel_app/Dockerfile
           push: true
-          tags: sakachris/alx-travel-app-api:latest
+          tags: sakachris/alx-travel-app-api:latest0811
