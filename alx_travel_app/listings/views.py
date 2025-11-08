@@ -7,8 +7,8 @@ from django.db import transaction
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from .models import Property, Booking, Payment
-from .serializers import InitiatePaymentSerializer, PropertySerializer, BookingSerializer, RegisterSerializer
+from .models import Property, Booking, Payment, Review
+from .serializers import InitiatePaymentSerializer, PropertySerializer, BookingSerializer, RegisterSerializer, ReviewSerializer
 from .chapa import initiate_payment, verify_payment
 from .tasks import send_payment_confirmation_email, send_booking_confirmation_email
 from rest_framework import viewsets
@@ -18,6 +18,8 @@ from rest_framework import generics
 from rest_framework.permissions import AllowAny
 from django.contrib.auth import get_user_model
 from .permissions import IsOwnerOrReadOnly, IsBookingOwner, IsHostOwnerOrReadOnly
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.views import TokenObtainPairView
 
 
 logger = logging.getLogger(__name__)
@@ -28,6 +30,32 @@ class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = RegisterSerializer
     permission_classes = [AllowAny]
+
+
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+        # Include user info in token
+        token['email'] = user.email
+        token['first_name'] = user.first_name
+        token['last_name'] = user.last_name
+        return token
+
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        # Include user info in the response
+        data.update({
+            "email": self.user.email,
+            "first_name": self.user.first_name,
+            "last_name": self.user.last_name,
+        })
+        return data
+
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
+
 
 
 class PropertyViewSet(viewsets.ModelViewSet):
@@ -45,27 +73,52 @@ class PropertyViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(host=self.request.user)
 
+def get_guest_user():
+    guest, created = User.objects.get_or_create(
+        email="guest@system.local",
+        defaults={
+            "first_name": "Guest",
+            "last_name": "User",
+            "password": "guestpassword123"
+        }
+    )
+    return guest
+
 
 class BookingViewSet(viewsets.ModelViewSet):
     serializer_class = BookingSerializer
-    permission_classes = [IsAuthenticated, IsBookingOwner]
+    # permission_classes = [IsAuthenticated, IsBookingOwner]
+    permission_classes = [AllowAny]
 
     def get_queryset(self):
-        # Only show bookings owned by the authenticated user
-        return Booking.objects.filter(user=self.request.user)
+        user = self.request.user
+        if user.is_authenticated:
+            return Booking.objects.filter(user=user)
+        # Guests shouldn’t see all bookings, return empty queryset
+        return Booking.objects.none()
 
     def perform_create(self, serializer):
-        # Automatically assign the booking to the current user
-        booking = serializer.save(user=self.request.user)
+        user = self.request.user
+        if not user.is_authenticated:
+            user = get_guest_user()
+        serializer.save(user=user)
+
+    # def get_queryset(self):
+    #     # Only show bookings owned by the authenticated user
+    #     return Booking.objects.filter(user=self.request.user)
+
+    # def perform_create(self, serializer):
+    #     # Automatically assign the booking to the current user
+    #     booking = serializer.save(user=self.request.user)
 
         # Trigger async email task
-        send_booking_confirmation_email.delay(
-            to_email=booking.user.email,
-            property_name=booking.property.name,
-            start_date=str(booking.start_date),
-            end_date=str(booking.end_date),
-            total_price=str(booking.total_price)
-        )
+        # send_booking_confirmation_email.delay(
+        #     to_email=booking.user.email,
+        #     property_name=booking.property.name,
+        #     start_date=str(booking.start_date),
+        #     end_date=str(booking.end_date),
+        #     total_price=str(booking.total_price)
+        # )
 
 class InitiatePaymentView(APIView):
     def post(self, request):
@@ -253,3 +306,21 @@ class SuccessPaymentView(APIView):
                 "user": booking.user.email
             }
         }, status=status.HTTP_200_OK)
+
+
+class PropertyReviewListView(generics.ListAPIView):
+    serializer_class = ReviewSerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        property_id = self.kwargs["property_id"]
+        return Review.objects.filter(property_id=property_id).order_by("-created_at")
+
+
+class ReviewCreateView(generics.CreateAPIView):
+    serializer_class = ReviewSerializer
+    permission_classes = [AllowAny]
+
+    def perform_create(self, serializer):
+        guest_user = get_guest_user()  # Assign guest user
+        serializer.save(user=guest_user)

@@ -1,12 +1,23 @@
 from django.contrib import admin
 
-from .models import Property, Booking, Payment, User
+from .models import Property, Booking, Payment, User, Review
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django import forms
 
 admin.site.register(Property)
 
 admin.site.register(Payment)
+
+@admin.register(Review)
+class ReviewAdmin(admin.ModelAdmin):
+    list_display = (
+        'review_id',
+        'property',
+        'user',
+        'rating',
+        'comment',
+        'created_at',
+    )
 
 @admin.register(Booking)
 class BookingAdmin(admin.ModelAdmin):
