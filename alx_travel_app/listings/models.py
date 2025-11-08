@@ -34,6 +34,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     phone_number = models.CharField(max_length=20, null=True, blank=True)
     role = models.CharField(max_length=10, choices=USER_ROLES, default='guest')
     created_at = models.DateTimeField(auto_now_add=True)
+    avatar = models.ImageField(upload_to="avatars/", null=True, blank=True)
 
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
@@ -51,18 +52,44 @@ class User(AbstractBaseUser, PermissionsMixin):
         return self.email
 
 
+# class Property(models.Model):
+#     property_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, db_index=True)
+#     host = models.ForeignKey(User, on_delete=models.CASCADE, related_name='properties')
+#     name = models.CharField(max_length=255)
+#     description = models.TextField()
+#     location = models.CharField(max_length=255)
+#     pricepernight = models.DecimalField(max_digits=10, decimal_places=2)
+#     created_at = models.DateTimeField(auto_now_add=True)
+#     updated_at = models.DateTimeField(auto_now=True)
+
+#     def __str__(self):
+#         return f"{self.name} in {self.location} (Host: {self.host.email}) Ksh {self.pricepernight} per night"
 class Property(models.Model):
     property_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, db_index=True)
     host = models.ForeignKey(User, on_delete=models.CASCADE, related_name='properties')
     name = models.CharField(max_length=255)
     description = models.TextField()
-    location = models.CharField(max_length=255)
+    # combine address parts
+    state = models.CharField(max_length=100, blank=True, null=True)
+    city = models.CharField(max_length=100, blank=True, null=True)
+    country = models.CharField(max_length=100, blank=True, null=True)
+
+    # extra fields
+    rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.0)
+    category = models.JSONField(default=list)  # store as list
     pricepernight = models.DecimalField(max_digits=10, decimal_places=2)
+    bed = models.PositiveSmallIntegerField(default=1)
+    shower = models.PositiveSmallIntegerField(default=1)
+    occupants = models.CharField(max_length=50, default='1-2')
+    image = models.ImageField(upload_to='properties/', blank=True, null=True)
+    discount = models.CharField(max_length=50, blank=True, null=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.name} in {self.location} (Host: {self.host.email}) Ksh {self.pricepernight} per night"
+        return f"{self.name} in {self.city } ({self.country})"
+
 
 class Booking(models.Model):
     booking_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, db_index=True)
